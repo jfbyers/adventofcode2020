@@ -1,4 +1,4 @@
-package es.cyclic;
+package com.jfbyers.adventofcode;
 
 import java.io.*;
 import java.util.ArrayList;

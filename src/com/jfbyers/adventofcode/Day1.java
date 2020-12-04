@@ -15,7 +15,7 @@ public class Day1 {
 
     public static void main(String[] args) {
 
-        int result = searchSumWithOperands(3);
+         int result = searchSumWithOperands(3);
         System.out.println("Result 3 operands:" + result);
         int result2 = searchSumWithOperands(2);
         System.out.println("Result 2 operands:" + result2);
@@ -34,12 +34,11 @@ public class Day1 {
 
     private static int start(int firstElementIndex, int numberOfOperands) {
         Integer firstElement = expenseReport[firstElementIndex];
-        for (int secondElementIndex = 0; secondElementIndex < expenseReport.length; secondElementIndex++) {
+        for (int secondElementIndex = firstElementIndex+1; secondElementIndex < expenseReport.length; secondElementIndex++) {
             boolean differentElements = secondElementIndex != firstElementIndex;
             if (differentElements) {
                 Integer secondElement = expenseReport[secondElementIndex];
-
-                int result = getValue(numberOfOperands, new Integer[] {firstElement, secondElement});
+                int result = getValue(numberOfOperands, new Integer[]{firstElement, secondElement});
                 if (result != -1) return result;
             }
         }
@@ -47,8 +46,8 @@ public class Day1 {
     }
 
     private static int getValue(int numberOfOperands, Integer[] elements) {
-        if (numberOfOperands == 3) {
-            return findThirdElement(elements,numberOfOperands);
+        if (numberOfOperands >= 3) {
+            return findThirdElement(elements, numberOfOperands);
         } else {
             return applyOperation2(elements);
         }
@@ -64,6 +63,10 @@ public class Day1 {
             for (int element : elements) {
                 result *= element;
             }
+            for (int i =0 ; i<elements.length ; i++){
+                System.out.print(elements[i]+ " ");
+            }
+            System.out.println("");
             return result;
         }
 
@@ -72,15 +75,15 @@ public class Day1 {
 
 
     private static int findThirdElement(Integer[] elements, int numberOfOperands) {
-        for (int thirdElementIndex = 0; thirdElementIndex < expenseReport.length; thirdElementIndex++) {
-
-            Integer thirdElement = expenseReport[thirdElementIndex];
-            Integer[] elements2 = Stream.of(elements, new Integer[]{thirdElement}).flatMap(Stream::of).toArray(Integer[]::new);
-            int result = applyOperation2(elements2);
+        for (int nextElementIndex = elements.length + 1 ; nextElementIndex < expenseReport.length; nextElementIndex++) {
+            Integer nextElement = expenseReport[nextElementIndex];
+            Integer[] elements3 = Stream.of(elements, new Integer[]{nextElement}).flatMap(Stream::of).toArray(Integer[]::new);
+            int result = getValue(numberOfOperands - 1,elements3);
             if (result != -1) {
                 return result;
             }
         }
+
         return -1;
     }
 

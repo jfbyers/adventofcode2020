@@ -4,7 +4,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Day5 {
 
@@ -15,21 +14,23 @@ public class Day5 {
         List<Integer> seatIds = getSeatIds();
         int max = Collections.max(seatIds);
         System.out.println("Maximum id is : "+max);
-        Collections.sort(seatIds);
         int mySeatId = getMySeatId(seatIds);
         System.out.println("My seat  id is : "+mySeatId);
-
-
     }
 
-    private static int getMySeatId(List<Integer> seatIds) {
-        int previousId = seatIds.get(0) -1 ;
-        for (int i = 0; i< seatIds.size(); i++){
-            int id = seatIds.get(i);
-            if (id != previousId + 1) {
-               return (previousId +  1);
+    private static int getMySeatId(final List<Integer> seatIds) {
+        final List<Integer> copySeatIds = new ArrayList<>(seatIds);
+        Collections.sort(copySeatIds);
+
+        int previousId = copySeatIds.get(0) - 1 ;
+        int size = copySeatIds.size();
+        for (int i = 0; i< size; i++){
+            int guessedNewId = previousId + 1;
+            int actualId = copySeatIds.get(i);
+            if (actualId != guessedNewId) {
+               return guessedNewId;
             }
-            previousId = id;
+            previousId = actualId;
         }
         return -1;
     }

@@ -29,16 +29,11 @@ public class Day7 {
     }
 
     public static void main(String[] args) {
-
-
         List<Rule> values = getvalues(new ArrayList<>(bagRules.values()), "shiny gold");
-
         recurse(values);
         System.out.println("Value 1" + counter.size());
         Rule startRule = bagRules.get("shiny gold");
-
         System.out.println("Value 2 " + (getBagNumber(startRule) - 1));
-
     }
 
     private static int getBagNumber(Rule startRule) {
@@ -73,7 +68,7 @@ public class Day7 {
 
     private static boolean getValue(String color, Rule r) {
         final Map<String, Integer> containment = r.containment;
-
+        
         if (containment.get(color) != null) {
             counter.add(r.bag);
             return true;

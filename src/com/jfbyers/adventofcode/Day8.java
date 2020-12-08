@@ -6,37 +6,41 @@ import java.util.List;
 
 public class Day8 {
 
+    private static List<Instruction> instructionList;
+
     public static void main(String[] args) {
         //Part 1
-        Program p = getProgram() ;
-        p.execute();
-
-        //Part 2
-        List<Integer> jmpIndexes = getOperandsIndexes(p.instructions,Operand.JMP);
-        List<Integer> noopIndexes = getOperandsIndexes(p.instructions,Operand.NOP);
-
-        for (Integer jmpToChange: jmpIndexes){
-            Program p1 = getProgram() ;
-            p1.execute(jmpToChange,Operand.NOP);
+        Program p = new Program() ;
+        if (!p.execute()){
+            System.out.println("Infinite loop at program. Accumulator value "+p.accumulator );
         }
 
-        for (Integer noOpToChange: noopIndexes){
-            Program p2 = getProgram() ;
-            p2.execute(noOpToChange,Operand.JMP);
+        //Part 2
+        List<Integer> jmpIndexes = getOperandsIndexes(Operand.JMP);
+        List<Integer> noopIndexes = getOperandsIndexes(Operand.NOP);
+
+        for (Integer instructionIndexToChange: jmpIndexes){
+            Program p1 = new Program();
+            p1.execute(instructionIndexToChange,Operand.NOP);
+        }
+
+        for (Integer instructionIndexToChange: noopIndexes){
+            Program p2 = new Program();
+            p2.execute(instructionIndexToChange,Operand.JMP);
         }
     }
 
-    private static List<Integer> getOperandsIndexes(List<Instruction> instructions, Operand jmp) {
+    private static List<Integer> getOperandsIndexes(Operand op) {
         List<Integer> result = new ArrayList<>();
-        for (Instruction i : instructions){
-            if (i.op.equals(jmp)){
+        for (Instruction i : getInstructions()){
+            if (i.op.equals(op)){
                 result.add(i.index);
             }
         }
         return result;
     }
 
-    private static Program getProgram() {
+    private static List<Instruction> getInstructions() {
         final File file = new File("inputDay8.txt");
         final List<Instruction> instructionList = new ArrayList<>();
         try (FileReader fr = new FileReader(file); BufferedReader br = new BufferedReader(fr)) {
@@ -52,7 +56,7 @@ public class Day8 {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return new Program(instructionList);
+        return instructionList;
     }
 
     private static class Program {
@@ -61,31 +65,32 @@ public class Day8 {
         private int nextInstruction = 0;
         private List<Integer> memory = new ArrayList<>();
 
-        public Program(List<Instruction> instructionList) {
-            this.instructions = instructionList;
+        public Program() {
+            this.instructions = getInstructions();
         }
 
-        public void execute() {
-            execute(null,null);
+        public boolean execute() {
+            return execute(null,null);
         }
 
-        public void execute(Integer instructionIndexToChange,Operand opToChange) {
+        public boolean execute(Integer instructionIndexToChange,Operand opToChange) {
             boolean stop = false;
 
-            while (!stop && !(nextInstruction >= this.instructions.size())) {
+            while (!stop && !(nextInstruction == this.instructions.size())) {
                 Instruction ins = this.instructions.get(nextInstruction);
                 if (ins.index.equals(instructionIndexToChange)){
                     ins.op = opToChange;
                 }
                 stop = executeInstruction(ins);
             }
-            if (nextInstruction >= this.instructions.size()) {
-                System.out.println("Program finished at accumulator " + accumulator + " index "+instructionIndexToChange + " "+opToChange);
+            if (nextInstruction == this.instructions.size()) {
+                System.out.println("Program finished at accumulator = " + accumulator + ". Instruction changed to a "+ opToChange+ " at index "+instructionIndexToChange);
+                return true;
             }
+            return false;
         }
         private boolean executeInstruction(Instruction i) {
             if (memory.contains(nextInstruction)) {
-                //System.out.println("Infinite loop at instruction number " + i.index + " (" + i.op + " " + i.offset + ")" );
                 return true;
             }
             memory.add(nextInstruction);

@@ -68,7 +68,7 @@ public class Day7 {
 
     private static boolean getValue(String color, Rule r) {
         final Map<String, Integer> containment = r.containment;
-        
+
         if (containment.get(color) != null) {
             counter.add(r.bag);
             return true;

@@ -12,8 +12,6 @@ import java.util.stream.Stream;
 
 public class Day8 {
 
-    private static List<Instruction> instructionList;
-
     public static void main(String[] args) {
         //Part 1
         Program p = new Program();

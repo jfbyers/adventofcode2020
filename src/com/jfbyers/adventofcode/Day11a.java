@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-public class Day11 {
+public class Day11a{
 
 
     public static void main(String[] args) {
@@ -57,7 +57,7 @@ public class Day11 {
     private static int countOccupied(List<Point> newPoints) {
         int occupiedSeats = 0;
         for (Point p : newPoints){
-           if (p.type == AreaType.OCCUPIED) occupiedSeats ++;
+            if (p.type == AreaType.OCCUPIED) occupiedSeats ++;
         }
         return occupiedSeats;
     }

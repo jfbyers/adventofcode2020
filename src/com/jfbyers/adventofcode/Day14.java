@@ -31,11 +31,8 @@ public class Day14 {
                      break;
                 case MEM:
                     Integer memoryPosition = Integer.valueOf(i.values[0]);
-
-
                     Long newValue = overwrite(Long.valueOf(i.values[1]),mask);
                     memory.put(memoryPosition,newValue);
-
                     break;
             }
 
@@ -48,12 +45,9 @@ public class Day14 {
     private static Long overwrite(Long value, String mask) {
         char[] maskBits = (mask.toCharArray());
 
-        char[] valueBits = reverse(new String(Arrays.copyOf(Long.toBinaryString(value).toCharArray(),36)));
-        for (int k = 0 ; k<valueBits.length;k++){
-            if (valueBits[k]=='\u0000'){
-                valueBits[k]='0';
-            }
-        }
+        char[] valueBits = getValueBits(value);
+
+
         for (int i =0 ; i<maskBits.length;i++){
             if (maskBits[i]=='0'){
                 valueBits[i] = '0';
@@ -66,14 +60,44 @@ public class Day14 {
 
     }
 
-    private static char[] reverse(String mask) {
-        return reverseString(mask).toCharArray();
+    private static Long overwrite2(Long value, String mask) {
+        char[] maskBits = (mask.toCharArray());
+
+        char[] valueBits = getValueBits(value);
+
+
+        for (int i =0 ; i<maskBits.length;i++){
+            if (maskBits[i]=='0'){
+                valueBits[i] = '0';
+            }else if(maskBits[i]=='1'){
+                valueBits[i] = '1';
+            }
+        }
+        String val = (new String(valueBits));
+        return new BigInteger(val,2).longValue();
+
     }
 
-    private static String reverseString(String mask) {
-        return new StringBuilder(mask).reverse().toString();
-    }
 
+    private static char[] getValueBits(Long value) {
+        char[] originalValue = Long.toBinaryString(value).toCharArray();
+
+        char[] valueBits = new char[36];
+        int index;
+
+
+        for ( index = 0 ; index< valueBits.length - originalValue.length;index++){
+            valueBits[index]='0';
+        }
+
+
+        for  (int i=0; index< valueBits.length;i++,index++){
+            valueBits[index]=originalValue[i];
+        }
+
+
+        return valueBits;
+    }
 
     private static List<Instruction> getInstructions() {
         try (Stream<String> stream = Files.lines(Paths.get("inputDay14a.txt"))) {

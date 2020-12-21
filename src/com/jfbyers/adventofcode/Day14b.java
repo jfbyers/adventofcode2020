@@ -15,6 +15,8 @@ public class Day14b {
 
     public static void main(String[] args) {
         List<Instruction> instructions = getInstructions();
+        Set<String> masks = new HashSet<>();
+
         System.out.println("There are " + instructions
                 .size() + " instructions");
 
@@ -26,15 +28,18 @@ public class Day14b {
 
                 case MASK:
                     mask = i.values[0];
+                    Set<String> maskSet = new HashSet<>();
+                    maskSet.add(mask);
+                    masks = getAllMaskValues(maskSet);
                     System.out.println("Mask updated");
                     break;
                 case MEM:
                     Integer memoryPos = Integer.valueOf(i.values[0]);
-                    Set<Integer> memoryPositions = new HashSet<>(overwrite2(memoryPos, mask));
+                    Set<Integer> memoryPositions = overwrite2(memoryPos, masks);
                     for (Integer memoryPosition : memoryPositions) {
                         memory.put(memoryPosition, Long.valueOf(i.values[1]));
                     }
-                    System.out.println("Updated "+memoryPositions.size()+ " positions");
+                    System.out.println("Updated " + memoryPositions.size() + " positions");
                     break;
             }
         }
@@ -43,84 +48,63 @@ public class Day14b {
 
     }
 
-
-    private static List<Integer> overwrite2(Integer value, String mask) {
-        char[] maskBits = (mask.toCharArray());
-        char[] addressBits = getValueBits(value);
-
-        for (int i = 0; i < maskBits.length; i++) {
-            if (maskBits[i] == 'X') {
-                addressBits[i] = 'X';
-            } else if (maskBits[i] == '1') {
-                addressBits[i] = '1';
-            }
-        }
-        List<Integer> global = new ArrayList<>();
-        Set<String> set = new HashSet<>();
-        set.add(new String(addressBits));
+    private static Set<String> getAllMaskValues(Set<String> masks) {
         Set<String> list = new HashSet<>();
 
-        Set<String> g = getExpanses(set,list);
+        for (String mask : masks) {
+            char[] maskBits = (mask.toCharArray());
+            char[] result = new char[maskBits.length];
 
-        for (String item : g){
-            String cleaned = clean(item.toCharArray());
-            global.add(new BigInteger(cleaned,2).intValue());
-        }
-        return global;
-
-    }
-
-    private static String clean(char[] item) {
-        for (int i = 0 ; i<item.length ; i++){
-            if (item[i] == 0){
-                item[i] ='0';
-            }
-        }
-        return new String (item);
-    }
-
-    private static Set<String> getExpanses(Set<String> addressList,Set<String> list) {
-        for (String addressBits : addressList) {
-            if (list.contains(addressBits)) continue;
-            char[] result = new char[addressBits.length()];
-            for (int i = 0; i < addressBits.length(); i++) {
-                {
-                    char c = addressBits.charAt(i);
-                    if (c == 'X') {
-                         list.addAll(getExpanses(finish(addressBits, i),list));
-                            //return list;
-                    } else {
-                        result[i] = c;
-                    }
+            for (int i = 0; i < maskBits.length; i++) {
+                if (maskBits[i] == 'X') {
+                    list.addAll(getAllMaskValues(finish(mask, i)));
+                } else {
+                    result[i] = maskBits[i];
                 }
             }
-            if (check(result)) {
-                //System.out.println("Checking "+new String(result)+ " length "+result.length);
-
+            //if (check(result)) {
                 list.add(new String(result));
-            }
+           // }
         }
+
+
         return list;
+    }
+
+    private static Set<Integer> overwrite2(Integer value, Set<String> masks) {
+        Set<Integer> global = new HashSet<>();
+        for (String mask : masks) {
+            char[] maskBits = (mask.toCharArray());
+            char[] addressBits = getValueBits(value);
+            for (int i = 0; i < maskBits.length; i++) {
+                if (maskBits[i] == '1') {
+                    addressBits[i] = '1';
+                }else if (maskBits[i] == '2') {
+                    addressBits[i] = '0';
+                }
+            }
+            global.add(new BigInteger(new String(addressBits), 2).intValue());
+        }
+        return global;
     }
 
     private static boolean check(char[] item) {
 
-            for (int i = 0 ; i<item.length ; i++){
-                if (item[i] == 0){
-                    return false;
-                }
+        for (int i = 0; i < item.length; i++) {
+            if (item[i] == 0) {
+                return false;
             }
-            return true;
         }
-
+        return true;
+    }
 
 
     private static Set<String> finish(String addressBits, int i) {
         StringBuilder stringBuilder1 = new StringBuilder(addressBits);
         StringBuilder stringBuilder2 = new StringBuilder(addressBits);
-        stringBuilder1.setCharAt(i,'1');
+        stringBuilder1.setCharAt(i, '1');
         String one = stringBuilder1.toString();
-        stringBuilder2.setCharAt(i,'0');
+        stringBuilder2.setCharAt(i, '2');
         String two = stringBuilder2.toString();
         Set<String> set = new HashSet<>();
         set.add(one);
@@ -146,7 +130,7 @@ public class Day14b {
     }
 
     private static List<Instruction> getInstructions() {
-        try (Stream<String> stream = Files.lines(Paths.get("inputDay14´ç´ñç_`lñ}{ñ.txt"))) {
+        try (Stream<String> stream = Files.lines(Paths.get("inputDay14.txt"))) {
             return stream.map(line -> Instruction.fromString(line)).collect(Collectors.toList());
         } catch (IOException e) {
             e.printStackTrace();

@@ -12,15 +12,14 @@ import java.util.stream.Stream;
 
 public class Day14 {
 
-
     public static void main(String[] args) {
         List<Instruction> instructions = getInstructions();
-        System.out.println("There are "+ instructions
-                .size()+ " instructions");
+        part1(instructions);
+        part2(instructions);
+    }
 
+    private static void part1(List<Instruction> instructions) {
         Map<Integer,Long> memory = new HashMap<>();
-
-
         String mask="000000000000000000000000000000000000";
 
         for (Instruction i : instructions){
@@ -31,22 +30,18 @@ public class Day14 {
                      break;
                 case MEM:
                     Integer memoryPosition = Integer.valueOf(i.values[0]);
-                    Long newValue = overwrite(Long.valueOf(i.values[1]),mask);
+                    Long newValue = overwrite(Integer.valueOf(i.values[1]),mask);
                     memory.put(memoryPosition,newValue);
                     break;
             }
-
         }
-         long sum = memory.values().stream().reduce(Long::sum).orElse(0L);
-         System.out.println("Sum is "+sum);
-
+        long sum = memory.values().stream().reduce(Long::sum).orElse(0L);
+        System.out.println("Sum is "+sum);
     }
 
-    private static Long overwrite(Long value, String mask) {
+    private static Long overwrite(Integer value, String mask) {
         char[] maskBits = (mask.toCharArray());
-
-        char[] valueBits = getValueBits(value);
-
+        char[] valueBits = String.format("%36s",Integer.toBinaryString(value)).replace(' ', '0').toCharArray();
 
         for (int i =0 ; i<maskBits.length;i++){
             if (maskBits[i]=='0'){
@@ -57,57 +52,59 @@ public class Day14 {
         }
         String val = (new String(valueBits));
         return new BigInteger(val,2).longValue();
-
     }
 
-    private static Long overwrite2(Long value, String mask) {
-        char[] maskBits = (mask.toCharArray());
+    private static void part2(List<Instruction> instructions) {
+        Map<String, Long> memory = new HashMap<>();
+        String mask = "000000000000000000000000000000000000";
 
-        char[] valueBits = getValueBits(value);
-
-
-        for (int i =0 ; i<maskBits.length;i++){
-            if (maskBits[i]=='0'){
-                valueBits[i] = '0';
-            }else if(maskBits[i]=='1'){
-                valueBits[i] = '1';
+        for (Instruction i : instructions) {
+            switch (i.type) {
+                case MASK:
+                    mask = i.values[0];
+                    break;
+                case MEM:
+                    String memAddrss = String.format("%36s",Integer.toBinaryString(Integer.parseInt(i.values[0]))).replace(' ', '0');
+                    Set<String> memoryPositions = applyMask2(memAddrss, mask,0);
+                    for (String memoryPosition : memoryPositions) {
+                        memory.put(memoryPosition, Long.valueOf(i.values[1]));
+                    }
+                    break;
             }
         }
-        String val = (new String(valueBits));
-        return new BigInteger(val,2).longValue();
-
+        long sum = memory.values().stream().reduce(Long::sum).orElse(0L);
+        System.out.println("Sum is " + sum);
     }
 
-
-    private static char[] getValueBits(Long value) {
-        char[] originalValue = Long.toBinaryString(value).toCharArray();
-
-        char[] valueBits = new char[36];
-        int index;
-
-
-        for ( index = 0 ; index< valueBits.length - originalValue.length;index++){
-            valueBits[index]='0';
+    private static Set<String> applyMask2(String address, String mask, int index){
+        if (index == address.length()){
+            Set<String> solution = new HashSet<>();
+            solution.add(address);
+            return solution;
+        }
+        if (mask.charAt(index)=='1'){
+            address = address.substring(0,index) + mask.charAt(index) + address.substring(index+1);
+            return applyMask2(address,mask,index+1);
+        } else if (mask.charAt(index)=='X'){
+            address = address.substring(0,index) + "1" + address.substring(index+1);
+            Set<String> one =applyMask2(address,mask,index+1);
+            address = address.substring(0,index) + "0" + address.substring(index+1);
+            Set<String> two =applyMask2(address,mask,index+1);
+            one.addAll(two);
+            return one;
         }
 
-
-        for  (int i=0; index< valueBits.length;i++,index++){
-            valueBits[index]=originalValue[i];
-        }
-
-
-        return valueBits;
+        return applyMask2(address,mask,index+1);
     }
 
     private static List<Instruction> getInstructions() {
-        try (Stream<String> stream = Files.lines(Paths.get("inputDay14a.txt"))) {
+        try (Stream<String> stream = Files.lines(Paths.get("inputDay14.txt"))) {
             return stream.map(line ->  Instruction.fromString(line)).collect(Collectors.toList());
         } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
     }
-
 
     public enum InstructionType{
         MEM, MASK;
@@ -141,13 +138,4 @@ public class Day14 {
         }
     }
 
-    private static class MemoryPosition {
-        private final int position;
-        private int value;
-
-        private MemoryPosition(int position, int value) {
-            this.position = position;
-            this.value = value;
-        }
-    }
 }

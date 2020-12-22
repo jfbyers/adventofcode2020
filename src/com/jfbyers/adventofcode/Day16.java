@@ -9,36 +9,147 @@ public class Day16 {
 
     public static void main(String[] args) {
         Program p = getProgram();
-        int invalidFields = 0;
-        for (Ticket t : p.nearbyTickets){
-            invalidFields += checkTicket(t, p.rules);
 
+        Set<Ticket> validTickets = part1(p);
+        long counter=  part2(p, validTickets);
+        System.out.println("Value: "+counter);
+    }
+
+    private static Set<Ticket> part1(Program p) {
+        int invalidFields = 0;
+        Set<Ticket>  validTickets= new HashSet<>();
+
+        for (Ticket t : p.nearbyTickets){
+            int invalidFieldsValue = checkTicket(t, p.rules);
+            if (invalidFieldsValue == 0 ){
+                validTickets.add(t);
+            }
+            invalidFields += invalidFieldsValue;
         }
-        System.out.println("Code "+invalidFields);
+        System.out.println("Result  "+invalidFields);
+        return validTickets;
+    }
+
+    private static long part2(Program p,Set<Ticket> validTickets) {
+        long counter = 1L;
+        Map<Integer, Set<Rule>> positionAndInvalidRules = getPositionAndInvalidRules(p, validTickets);
+        Map<Integer,Set<Rule>> positionAndValidRules = reverseMap(positionAndInvalidRules, p.rules);
+
+        Map<Integer, Rule > positionOfeveryRule = new HashMap<>();
+
+        RuleAndPosition r = getPositionOfSingleRule(positionAndValidRules);
+        while (r!=null) {
+            positionOfeveryRule.put(  r.key,r.rule);
+            removeRule(positionAndValidRules, r);
+            r = getPositionOfSingleRule(positionAndValidRules);
+        }
+
+        for (Integer value : p.myTicket.values){
+            Rule rule = positionOfeveryRule.get(p.myTicket.values.indexOf(value));
+
+            if (rule!=null && rule.label.startsWith("departure")){
+                counter *= value;
+            }
+        }
+        return counter;
+    }
+
+    private static Map<Integer, Set<Rule>> getPositionAndInvalidRules(Program p, Set<Ticket> validTickets) {
+        Map<Integer,Set<Rule>> positionAndInvalidRules = new HashMap<>();
+        for (Ticket t: validTickets){
+            for (Integer value : t.values) {
+                Set<Rule> inValidRules = getInValidRules(value, p.rules);
+                if (inValidRules.size()!=0) {
+                    int position = t.values.indexOf(value);
+                    Set<Rule> invalidRuleSet = positionAndInvalidRules.get(position);
+                    if (invalidRuleSet == null) {
+                        invalidRuleSet = new HashSet<>();
+                    }
+                    invalidRuleSet.addAll(inValidRules);
+                    positionAndInvalidRules.put(position,invalidRuleSet);
+
+                }
+            }
+        }
+        return positionAndInvalidRules;
+    }
+
+    private static void removeRule(Map<Integer, Set<Rule>> positionAndValidRules, RuleAndPosition r) {
+        for (Map.Entry<Integer,Set<Rule>> entry: positionAndValidRules.entrySet()){
+            Set<Rule>  validRules = entry.getValue();
+            if (entry.getKey() != r.key){
+                validRules.remove(r.rule);
+            }
+        }
+    }
+
+    private static RuleAndPosition getPositionOfSingleRule(Map<Integer, Set<Rule>> positionAndValidRules) {
+        for (Map.Entry<Integer,Set<Rule>> entry: positionAndValidRules.entrySet()){
+            Set<Rule>  validRules = entry.getValue();
+            if (validRules.size() == 1){
+                positionAndValidRules.remove(entry.getKey());
+                return new RuleAndPosition(validRules.iterator().next(),entry.getKey());
+            }
+        }
+        return null;
+    }
+
+    private static Map<Integer, Set<Rule>> reverseMap(Map<Integer, Set<Rule>> positionAndInvalidRules, Set<Rule> rules) {
+        Map<Integer, Set<Rule>> reversedMap = new HashMap<>();
+        for (Map.Entry<Integer,Set<Rule>> entry: positionAndInvalidRules.entrySet()){
+           Set<Rule> validRules = new HashSet<>(rules);
+           Set<Rule>  invalidRules = entry.getValue();
+            validRules.removeAll(invalidRules);
+            reversedMap.put(entry.getKey(),validRules);
+        }
+        return reversedMap;
     }
 
     private static int checkTicket(Ticket t, Set<Rule> rules) {
-        Map<Integer, Rule>  validValues= new HashMap<>();
-        boolean valid=false ;
+        boolean valid;
         int counter = 0;
         for (Integer value : t.values) {
-
-            for (Rule r : rules) {
-                Range range1 = r.ranges[0];
-                Range range2 = r.ranges[1];
-                boolean isValid = (range1.lowerBound <= value && value <= range1.upperBound) || (range2.lowerBound <= value && value <= range2.upperBound);
-                if (isValid){
-                    valid = true;
-                }
-
-            }
+            valid = anyRuleIsValid(value,rules);
             if (!valid){
                 counter+= value;
             }
-            valid = false;
         }
-
         return counter;
+    }
+
+    private static boolean anyRuleIsValid(Integer value, Set<Rule> rules) {
+        return !getValidRules(value,rules).isEmpty();
+    }
+
+
+    private static Set<Rule> getValidRules(Integer value, Set<Rule> rules) {
+        Set<Rule> validRules = new HashSet<>();
+        for (Rule r : rules) {
+            boolean isValid = isValid(r, value);
+            if (isValid){
+                validRules.add(r);
+            }
+        }
+        return validRules;
+    }
+
+    private static Set<Rule> getInValidRules(Integer value, Set<Rule> rules) {
+        Set<Rule> inValidRules = new HashSet<>();
+        for (Rule r : rules) {
+            boolean isValid = isValid(r, value);
+            if (!isValid){
+                inValidRules.add(r);
+            }
+        }
+        return inValidRules;
+    }
+    
+    private static boolean isValid(Rule r, int value) {
+        Range range1 = r.ranges[0];
+        Range range2 = r.ranges[1];
+        boolean isValid = (range1.lowerBound <= value && value <= range1.upperBound)
+                || (range2.lowerBound <= value && value <= range2.upperBound);
+        return isValid;
     }
 
     private static  Program getProgram() {
@@ -53,6 +164,13 @@ public class Day16 {
                     program.rules.add(rule);
                     line = scanner.nextLine();
                 }
+                while (!line.equals("your ticket:")){
+                    line = scanner.nextLine();
+                }
+                line = scanner.nextLine();
+                Ticket myTicket = Ticket.fromLine(line);
+                program.myTicket = myTicket;
+
                 while (!line.equals("nearby tickets:")){
                      line = scanner.nextLine();
                 }
@@ -60,7 +178,6 @@ public class Day16 {
                     line = scanner.nextLine();
                     Ticket ticket = Ticket.fromLine(line);
                     program.nearbyTickets.add(ticket);
-
                 }
 
             }
@@ -77,7 +194,6 @@ public class Day16 {
         private Ticket myTicket;
         private Set<Ticket> nearbyTickets = new HashSet<>();
         private Set<Rule> rules = new HashSet<>();
-
 
     }
     private static class Rule {
@@ -100,7 +216,7 @@ public class Day16 {
         }
     }
     private static class Ticket {
-        private List<Integer> values = new ArrayList<>();
+        private List<Integer> values;
 
         public  Ticket(List<Integer> collect) {
             this.values = collect;
@@ -126,4 +242,13 @@ public class Day16 {
         }
     }
 
+    private static class RuleAndPosition {
+        private final Integer key;
+        private final Rule rule;
+
+        public RuleAndPosition(Rule next, Integer key) {
+            this.rule = next;
+            this.key = key;
+        }
+    }
 }

@@ -12,20 +12,18 @@ public class Day17 {
 
     public static void main(String[] args) {
 
-        Map<Coordinates, Cube> initialCubes = getCubeMap();
-        Map<Coordinates, Cube> finalMap = new HashMap<>();
-        for (Coordinates c : initialCubes.keySet()) {
-            Map<Coordinates, Cube> neighbours = getNeighbours(c, initialCubes);
-            Cube cube = initialCubes.get(c);
-            finalMap.put(c, cube);
-            finalMap.putAll(neighbours);
+        Set<Coordinates> initialCubes = getActiveCubes();
+        Set<Coordinates> cubes = new HashSet<>();
+        for (Coordinates c : initialCubes) {
+            Set<Coordinates> neighbours = getNeighbours(c,initialCubes);
+            cubes.addAll(neighbours);
+            cubes.add(c);
         }
 
         int cycle = 0;
-        long activeCubes2 = finalMap.values().stream()
-                .filter(cube -> cube.state.equals(CubeState.ACTIVE)).count();
+        long activeCubes2 = cubes.stream().count();
         System.out.println("Cube actives before cycle : " + activeCubes2);
-        Map<Coordinates, Cube> cycleCubes = finalMap;
+        Set<Coordinates> cycleCubes = cubes;
         while (cycle <= 5) {
             System.out.println("cycle " + cycle);
             cycleCubes = cycle(cycleCubes);
@@ -33,8 +31,7 @@ public class Day17 {
             cycle++;
 
         }
-        long activeCubes = cycleCubes.values().stream()
-                .filter(cube -> cube.state.equals(CubeState.ACTIVE)).count();
+        long activeCubes = cycleCubes.stream().count();
         System.out.println("Cube actives: " + activeCubes);
     }
 
@@ -49,43 +46,36 @@ public class Day17 {
     }
 
 
-    private static Map<Coordinates, Cube> cycle(Map<Coordinates, Cube> cubes) {
-        Map<Coordinates, Cube> finalMap = new HashMap<>();
+    private static Set<Coordinates> cycle(Set<Coordinates> cubes) {
+       Set<Coordinates> finalMap = new HashSet<>();
 
-        for (Coordinates c : cubes.keySet()) {
-            Map<Coordinates, Cube> neighbours = getNeighbours(c, cubes);
-            Stream<Cube> cubeStream = neighbours.values().stream()
-                    .filter(cube -> cube.state.equals(CubeState.ACTIVE));
+        for (Coordinates c : cubes) {
+            Set<Coordinates> neighbours = getNeighbours(c,cubes);
+            Stream<Coordinates> cubeStream = neighbours.stream();
 
-            List<Cube> activeNeighbourSet = cubeStream.collect(Collectors.toList());
+            List<Coordinates> activeNeighbourSet = cubeStream.collect(Collectors.toList());
             long activeNeighbours = activeNeighbourSet.size();
-            Cube cube = cubes.get(c);
-            //printActiveNeighbours(neighbours, cube);
-            switch (cube.state) {
+            switch (c.state) {
                 case ACTIVE:
                     if (activeNeighbours == 2 || activeNeighbours == 3) {
-
-                        finalMap.put(c, cube);
+                        finalMap.add(c);
                     } else {
-                        Cube newCube = new Cube('.', c);
-                        finalMap.put(c, newCube);
+                        Cube newCube = new Cube('.', c.coords);
+                        finalMap.add(newCube);
                     }
                     break;
                 case INACTIVE:
                     if (activeNeighbours == 3) {
-                        Cube newCube = new Cube('#', c);
-                        finalMap.put(c, newCube);
+                        Cube newCube = new Cube('#', c.coords);
+                        finalMap.add(newCube);
                     } else {
-                        finalMap.put(c, cube);
+                        finalMap.add(c);
                     }
                     break;
             }
-            //activeNeighbourList.addAll(activeNeighbourSet);
-            //finalMap.putAll(neighbours);
-
         }
 
-        List<Cube> activesAfterCycle = finalMap.values().stream()
+        List<Cube> activesAfterCycle = finalMap.stream()
                 .filter(cube -> cube.state.equals(CubeState.ACTIVE)).collect(Collectors.toList());
 
         for (Cube c : activesAfterCycle) {
@@ -98,9 +88,9 @@ public class Day17 {
     }
 
 
-    private static Map<Coordinates, Cube> getNeighbours(Coordinates c, Map<Coordinates, Cube> cubes) {
+    private static Set<Coordinates> getNeighbours(Coordinates c) {
 
-        Map<Coordinates, Cube> newCubesMap = new HashMap<>();
+        Set<Coordinates> newCubesMap = new HashSet<>();
         for (int i = c.x - 1; i <= c.x + 1; i++) {
             for (int j = c.y - 1; j <= c.y + 1; j++) {
                 for (int k = c.z - 1; k <= c.z + 1; k++) {
@@ -108,12 +98,7 @@ public class Day17 {
                     if (coord.equals(c)) {
                         continue;
                     }
-                    Cube aCube = cubes.get(coord);
-                    if (aCube == null) {
-
-                        aCube = new Cube('.', coord);
-                    }
-                    newCubesMap.put(coord, aCube);
+                    newCubesMap.add(coord);
                 }
             }
         }
@@ -121,22 +106,23 @@ public class Day17 {
     }
 
 
-    private static Map<Coordinates, Cube> getCubeMap() {
-        Map<Coordinates, Cube> cubeMap = new HashMap<>();
+    private static Set<Coordinates> getActiveCubes() {
+        final Set<Coordinates> cubes = new HashSet<>();
         try (Stream<String> stream = Files.lines(Paths.get("inputDay17a.txt"))) {
-            final int z = 0;
+
             AtomicInteger lineCounter = new AtomicInteger(0);
             stream.forEach(line -> {
                 char[] chars = line.toCharArray();
                 for (int i = 0; i < chars.length; i++) {
-                    Coordinates coords = new Coordinates(lineCounter.get(), i, z);
-                    Cube cube = new Cube(chars[i], coords);
-                    cubeMap.put(coords, cube);
+                    Coordinates coords = new Coordinates(lineCounter.get(), i, 0);
+                    if (chars[i]=='#') {
+                        cubes.add(coords);
+                    }
                 }
                 lineCounter.incrementAndGet();
             });
 
-            return cubeMap;
+            return cubes;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -144,48 +130,7 @@ public class Day17 {
     }
 
 
-    private enum CubeState {
-        ACTIVE('#'), INACTIVE('.');
 
-        private final char state;
-
-        CubeState(char state) {
-            this.state = state;
-        }
-    }
-
-    private static class Cube {
-
-
-        private final Coordinates coords;
-        private CubeState state;
-
-        @Override
-        public String toString() {
-            return "Cube{" +
-                    "coords=" + coords +
-                    ", state=" + state +
-                    '}';
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Cube cube = (Cube) o;
-            return coords.equals(cube.coords) && state == cube.state;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(coords, state);
-        }
-
-        public Cube(char state, Coordinates coords) {
-            this.state = state == '.' ? CubeState.INACTIVE : CubeState.ACTIVE;
-            this.coords = coords;
-        }
-    }
 
     private static class Coordinates {
         int x, y, z;

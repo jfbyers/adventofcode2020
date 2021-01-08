@@ -159,7 +159,7 @@ public class Day16 {
             Scanner scanner = new Scanner(new File("inputDay16.txt"));
             while (scanner.hasNext()) {
                 String line = scanner.nextLine();
-                while (!line.trim().isBlank()) {
+                while (!line.trim().isEmpty()) {
                     Rule rule = Rule.fromLine(line);
                     program.rules.add(rule);
                     line = scanner.nextLine();
